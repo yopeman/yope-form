@@ -108,7 +108,6 @@ export function Dashboard({ user }: { user: any }) {
               onClick={() => router.push(`/sheets/${sheet.sheet_id}`)}
             >
               <h3 className="font-semibold text-lg group-hover:text-indigo-500 transition-colors">{sheet.sheet_name}</h3>
-              <p className="text-sm text-gray-500 break-all">{sheet.sheet_id}</p>
             </div>
           ))}
         </div>

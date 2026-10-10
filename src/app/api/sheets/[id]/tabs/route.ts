@@ -37,14 +37,40 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
 
     const { id } = await params;
-    const { title } = await request.json();
+    const { title, fields } = await request.json();
 
     if (!title) {
       return NextResponse.json({ error: 'Sheet title is required' }, { status: 400 });
     }
+    
+    if (!fields || !Array.isArray(fields) || fields.length === 0) {
+      return NextResponse.json({ error: 'Fields are required to define the schema' }, { status: 400 });
+    }
 
     const doc = await getExternalSpreadsheet(id);
-    const newSheet = await doc.addSheet({ title });
+    const headerValues = fields.map((f: any) => f.name);
+    
+    const newSheet = await doc.addSheet({ title, headerValues });
+
+    const typeRow: any = {};
+    const minRow: any = {};
+    const maxRow: any = {};
+    const reqRow: any = {};
+    const optRow: any = {};
+    const defRow: any = {};
+    const sepRow: any = {};
+
+    fields.forEach((f: any) => {
+      typeRow[f.name] = f.type;
+      minRow[f.name] = f.min || '';
+      maxRow[f.name] = f.max || '';
+      reqRow[f.name] = f.required ? 'true' : 'false';
+      optRow[f.name] = f.options || '';
+      defRow[f.name] = f.defaultValue || '';
+      sepRow[f.name] = '---';
+    });
+
+    await newSheet.addRows([typeRow, minRow, maxRow, reqRow, optRow, defRow, sepRow]);
 
     return NextResponse.json({ 
       message: 'Tab created successfully',
