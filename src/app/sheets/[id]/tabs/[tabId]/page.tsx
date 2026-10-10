@@ -211,10 +211,14 @@ export default function TabRecords() {
             
             <button
               onClick={handleCopyLink}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md transition ${copied ? 'bg-green-500 text-white' : 'bg-background border border-border hover:bg-card'}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-300 border ${
+                copied 
+                  ? 'bg-green-500 border-green-500 text-white font-medium' 
+                  : 'bg-background border-border text-foreground hover:bg-card'
+              }`}
               title="Copy Public Form Link"
             >
-              {copied ? <Check size={18} /> : <LinkIcon size={18} />}
+              {copied ? <Check size={18} className="text-white" /> : <LinkIcon size={18} />}
               <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share Form'}</span>
             </button>
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Check, Loader2 } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 type SchemaField = {
   name: string;
@@ -169,7 +170,7 @@ export default function PublicForm() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground transition-colors p-4">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
       </div>
     );
@@ -177,8 +178,8 @@ export default function PublicForm() {
 
   if (error && !schema.length) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950 p-4">
-        <div className="max-w-md w-full bg-white dark:bg-zinc-900 border border-red-200 dark:border-red-900 p-8 rounded-2xl shadow-xl text-center">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground transition-colors p-4">
+        <div className="max-w-md w-full bg-card border border-border p-8 rounded-2xl shadow-xl text-center">
           <h1 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">Error Loading Form</h1>
           <p className="text-gray-600 dark:text-gray-400">{error}</p>
         </div>
@@ -188,8 +189,8 @@ export default function PublicForm() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950 p-4">
-        <div className="max-w-md w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-8 rounded-2xl shadow-xl text-center">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground transition-colors p-4">
+        <div className="max-w-md w-full bg-card border border-border p-8 rounded-2xl shadow-xl text-center">
           <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
             <Check size={32} />
           </div>
@@ -215,8 +216,12 @@ export default function PublicForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 py-12 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-2xl mx-auto bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground transition-colors py-12 px-4 sm:px-6 lg:px-8 font-sans relative">
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
+      <div className="max-w-2xl mx-auto bg-card border border-border rounded-2xl shadow-xl overflow-hidden relative z-10">
         <div className="bg-indigo-600 px-8 py-10 text-white">
           <h1 className="text-3xl font-bold">{title}</h1>
           <p className="mt-2 text-indigo-100 opacity-90">Please fill out the form below. All required fields are marked.</p>
@@ -228,7 +233,7 @@ export default function PublicForm() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {schema.filter(f => f.name !== 'id').map(field => (
               <div key={field.name} className="flex flex-col gap-1.5">
-                <label className="font-semibold text-gray-800 dark:text-gray-200">
+                <label className="font-semibold text-foreground">
                   {field.name}
                   {field.required && <span className="text-red-500 ml-1" title="Required">*</span>}
                 </label>
@@ -236,7 +241,7 @@ export default function PublicForm() {
               </div>
             ))}
 
-            <div className="pt-6 mt-6 border-t border-gray-100 dark:border-zinc-800">
+            <div className="pt-6 mt-6 border-t border-border">
               <button
                 type="submit"
                 disabled={submitting}
@@ -250,7 +255,7 @@ export default function PublicForm() {
         </div>
       </div>
       
-      <div className="text-center mt-8 text-sm text-gray-500 dark:text-gray-400 pb-8">
+      <div className="text-center mt-8 text-sm text-muted-foreground pb-8 relative z-10">
         Powered by Yope Forms
       </div>
     </div>
