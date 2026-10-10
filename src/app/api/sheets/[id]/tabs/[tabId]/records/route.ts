@@ -72,7 +72,35 @@ export async function POST(request: Request, { params }: { params: { id: string;
       body.id = crypto.randomUUID();
     }
 
-    await sheet.addRow(body);
+    await sheet.loadHeaderRow();
+    const rows = await sheet.getRows();
+    
+    // Find the absolute last row with data
+    const lastRowIndex = rows.length > 0 ? rows[rows.length - 1].rowNumber : 1;
+    // lastRowIndex (1-based) happens to perfectly match the 0-based index for the next empty row!
+    const nextRowIndex = lastRowIndex;
+
+    // Ensure the sheet has enough rows in its grid
+    if (nextRowIndex >= sheet.rowCount) {
+      // expand grid by 10 rows just to be safe
+      await sheet.resize({ rowCount: sheet.rowCount + 10, columnCount: sheet.columnCount });
+    }
+
+    // Load specifically the next empty row
+    await sheet.loadCells({
+      startRowIndex: nextRowIndex,
+      endRowIndex: nextRowIndex + 1,
+      startColumnIndex: 0,
+      endColumnIndex: sheet.headerValues.length
+    });
+
+    // Write values manually to avoid API gap-filling quirks
+    sheet.headerValues.forEach((header, colIndex) => {
+      const cell = sheet.getCell(nextRowIndex, colIndex);
+      cell.value = body[header] || '';
+    });
+
+    await sheet.saveUpdatedCells();
 
     return NextResponse.json({ message: 'Record added', record: body }, { status: 201 });
   } catch (error: any) {

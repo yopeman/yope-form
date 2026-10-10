@@ -37,7 +37,7 @@ export async function PUT(request: Request, { params }: { params: { id: string; 
           rows[3].assign({ [f.name]: f.required ? 'true' : 'false' });
           rows[4].assign({ [f.name]: f.options || '' });
           rows[5].assign({ [f.name]: f.defaultValue || '' });
-          rows[6].assign({ [f.name]: '===' });
+          rows[6].assign({ [f.name]: '---' });
         });
 
         await Promise.all([
