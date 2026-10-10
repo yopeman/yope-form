@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import { Plus, List, Grid, LogOut, Edit2, Trash2, Table2 } from 'lucide-react';
+import { Plus, List, Grid, LogOut, Edit2, Trash2, Table2, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export function Dashboard({ user }: { user: any }) {
+export function Dashboard({ user, clientEmail }: { user: any; clientEmail: string }) {
   const { theme, setTheme } = useTheme();
   const [sheets, setSheets] = useState<any[]>([]);
   const [view, setView] = useState<'grid' | 'list'>('grid');
@@ -15,6 +15,7 @@ export function Dashboard({ user }: { user: any }) {
   const [newSheetId, setNewSheetId] = useState('');
   const [newSheetName, setNewSheetName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -182,7 +183,7 @@ export function Dashboard({ user }: { user: any }) {
           {sheets.map(sheet => (
             <div 
               key={sheet.uuid} 
-              onClick={() => router.push(`/sheets/${sheet.uuid}`)}
+              onClick={() => router.push(`/sheets/${sheet.sheet_id}`)}
               className="p-6 border border-border rounded-lg shadow-sm bg-card flex flex-col gap-2 cursor-pointer hover:border-indigo-500 transition-colors group relative"
             >
               <div className="absolute top-4 right-4 flex opacity-0 group-hover:opacity-100 transition-opacity">
@@ -208,9 +209,43 @@ export function Dashboard({ user }: { user: any }) {
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-xl">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-xl my-8">
             <h2 className="text-xl font-bold mb-4 text-foreground">Connect New Sheet</h2>
+            
+            <div className="mb-6 p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-lg">
+              <h3 className="font-semibold text-sm text-indigo-800 dark:text-indigo-300 mb-2">Share Your Sheet</h3>
+              <p className="text-xs text-indigo-700 dark:text-indigo-400 mb-3 leading-relaxed">
+                Open your Google Sheet, click <strong>Share</strong>, and paste the email below. Grant it <strong>Editor</strong> access so we can read and write data.
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="text-xs flex-1 bg-white dark:bg-black/50 p-2 rounded border border-indigo-200 dark:border-indigo-700 break-all select-all">
+                  {clientEmail}
+                </code>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(clientEmail);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className={`px-3 py-2 text-xs font-semibold rounded flex items-center gap-1 transition ${
+                    copied 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-700'
+                  }`}
+                >
+                  {copied ? (
+                    <>
+                      <Check size={14} /> Copied!
+                    </>
+                  ) : (
+                    'Copy'
+                  )}
+                </button>
+              </div>
+            </div>
+
             <form onSubmit={handleConnectSheet} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1 text-foreground">Sheet Name</label>

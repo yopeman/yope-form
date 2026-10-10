@@ -27,7 +27,6 @@ export default function SheetDetails() {
   const [loading, setLoading] = useState(true);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [newTabName, setNewTabName] = useState('');
   const [addingTab, setAddingTab] = useState(false);
@@ -76,50 +75,58 @@ export default function SheetDetails() {
     setFields(fields.map(f => f.id === fieldId ? { ...f, [key]: value } : f));
   };
 
-  const handleAddTab = async (e: React.FormEvent) => {
+  const handleSaveTab = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddingTab(true);
     try {
-      const res = await fetch(`/api/sheets/${id}/tabs`, {
-        method: 'POST',
+      const url = editingTabId ? `/api/sheets/${id}/tabs/${editingTabId}` : `/api/sheets/${id}/tabs`;
+      const method = editingTabId ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: newTabName, fields }),
       });
       if (res.ok) {
         setIsModalOpen(false);
         setNewTabName('');
+        setEditingTabId(null);
         setFields([{ id: '1', name: 'id', type: 'uuid', min: '', max: '', required: true, options: '', defaultValue: '' }]);
         fetchTabs();
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to create tab');
+        alert(err.error || `Failed to ${editingTabId ? 'update' : 'create'} tab`);
       }
     } finally {
       setAddingTab(false);
     }
   };
 
-  const handleEditTab = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAddingTab(true);
+  const handleEditClick = async (tabId: string, tabTitle: string) => {
+    setEditingTabId(tabId);
+    setNewTabName(tabTitle);
+    
     try {
-      const res = await fetch(`/api/sheets/${id}/tabs/${editingTabId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTabName }),
-      });
+      const res = await fetch(`/api/sheets/${id}/tabs/${tabId}/records`);
       if (res.ok) {
-        setIsEditModalOpen(false);
-        setNewTabName('');
-        setEditingTabId(null);
-        fetchTabs();
-      } else {
-        const err = await res.json();
-        alert(err.error || 'Failed to edit tab');
+        const data = await res.json();
+        if (data.schema && data.schema.length > 0) {
+          setFields(data.schema.map((f: any, idx: number) => ({
+            id: (idx + 1).toString(),
+            name: f.name,
+            type: f.type,
+            min: f.min,
+            max: f.max,
+            required: f.required,
+            options: f.options,
+            defaultValue: f.defaultValue
+          })));
+        }
       }
-    } finally {
-      setAddingTab(false);
+    } catch (e) {
+      console.error(e);
     }
+    
+    setIsModalOpen(true);
   };
 
   const handleDelete = async (tabIdToDel: string) => {
@@ -164,7 +171,12 @@ export default function SheetDetails() {
               </button>
             </div>
             <button
-              onClick={() => { setIsModalOpen(true); setNewTabName(''); }}
+              onClick={() => { 
+                setEditingTabId(null);
+                setNewTabName(''); 
+                setFields([{ id: '1', name: 'id', type: 'uuid', min: '', max: '', required: true, options: '', defaultValue: '' }]);
+                setIsModalOpen(true); 
+              }}
               disabled={loading}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
             >
@@ -202,7 +214,7 @@ export default function SheetDetails() {
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{tab.columnCount}</td>
                   <td className="px-4 py-3 text-right">
                     <button
-                      onClick={(e) => { e.stopPropagation(); setEditingTabId(tab.sheetId); setNewTabName(tab.title); setIsEditModalOpen(true); }}
+                      onClick={(e) => { e.stopPropagation(); handleEditClick(tab.sheetId, tab.title); }}
                       className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
                       title="Edit"
                     >
@@ -231,7 +243,7 @@ export default function SheetDetails() {
             >
               <div className="absolute top-4 right-4 flex opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                  onClick={(e) => { e.stopPropagation(); setEditingTabId(tab.sheetId); setNewTabName(tab.title); setIsEditModalOpen(true); }}
+                  onClick={(e) => { e.stopPropagation(); handleEditClick(tab.sheetId, tab.title); }}
                   className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-2 p-1 bg-background rounded-md shadow-sm border border-border"
                   title="Edit"
                 >
@@ -261,8 +273,8 @@ export default function SheetDetails() {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-card border border-border rounded-xl max-w-3xl w-full p-6 shadow-xl my-8">
-            <h2 className="text-xl font-bold mb-4">Create New Tab with Schema</h2>
-            <form onSubmit={handleAddTab} className="space-y-6">
+            <h2 className="text-xl font-bold mb-4">{editingTabId ? 'Edit Tab & Schema' : 'Create New Tab with Schema'}</h2>
+            <form onSubmit={handleSaveTab} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium mb-1">Tab Name</label>
                 <input
@@ -383,46 +395,10 @@ export default function SheetDetails() {
                 </button>
                 <button
                   type="submit"
-                  disabled={addingTab}
+                  disabled={addingTab || fields.length === 0}
                   className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  {addingTab ? 'Creating...' : 'Create Tab'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-card border border-border rounded-xl max-w-sm w-full p-6 shadow-xl my-8">
-            <h2 className="text-xl font-bold mb-4">Edit Tab</h2>
-            <form onSubmit={handleEditTab} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Tab Name</label>
-                <input
-                  required
-                  type="text"
-                  value={newTabName}
-                  onChange={e => setNewTabName(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background"
-                />
-              </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-border mt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 rounded-md border border-border hover:opacity-80"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={addingTab}
-                  className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {addingTab ? 'Saving...' : 'Save'}
+                  {addingTab ? 'Saving...' : (editingTabId ? 'Save Changes' : 'Create Tab')}
                 </button>
               </div>
             </form>

@@ -6,7 +6,7 @@ export default async function Home() {
   const session = await getSession();
 
   if (session?.user) {
-    return <Dashboard user={session.user} />;
+    return <Dashboard user={session.user} clientEmail={process.env.CLIENT_EMAIL || ''} />;
   }
 
   return (
