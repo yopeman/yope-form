@@ -21,6 +21,13 @@ export const getSpreadsheet = async () => {
   return doc;
 };
 
+export const getExternalSpreadsheet = async (sheetId: string) => {
+  const jwt = getAuthToken();
+  const doc = new GoogleSpreadsheet(sheetId, jwt);
+  await doc.loadInfo();
+  return doc;
+};
+
 export const getUserSheet = async () => {
   const doc = await getSpreadsheet();
   let sheet = doc.sheetsByTitle['user'];

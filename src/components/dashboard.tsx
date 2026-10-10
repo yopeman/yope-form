@@ -102,8 +102,12 @@ export function Dashboard({ user }: { user: any }) {
       ) : (
         <div className={view === 'grid' ? 'grid grid-cols-1 md:grid-cols-3 gap-6' : 'flex flex-col gap-4'}>
           {sheets.map(sheet => (
-            <div key={sheet.uuid} className="p-6 border border-border rounded-lg shadow-sm bg-card flex flex-col gap-2">
-              <h3 className="font-semibold text-lg">{sheet.sheet_name}</h3>
+            <div 
+              key={sheet.uuid} 
+              className="p-6 border border-border rounded-lg shadow-sm bg-card flex flex-col gap-2 cursor-pointer hover:border-indigo-500 transition-colors group"
+              onClick={() => router.push(`/sheets/${sheet.sheet_id}`)}
+            >
+              <h3 className="font-semibold text-lg group-hover:text-indigo-500 transition-colors">{sheet.sheet_name}</h3>
               <p className="text-sm text-gray-500 break-all">{sheet.sheet_id}</p>
             </div>
           ))}
