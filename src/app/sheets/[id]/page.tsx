@@ -20,6 +20,7 @@ type Field = {
 export default function SheetDetails() {
   const params = useParams();
   const id = params.id as string;
+  const router = useRouter();
   
   const [tabs, setTabs] = useState<any[]>([]);
   const [title, setTitle] = useState('');
@@ -122,8 +123,12 @@ export default function SheetDetails() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {tabs.map(tab => (
-            <div key={tab.sheetId} className="p-6 border border-border rounded-lg shadow-sm bg-card flex flex-col gap-3">
-              <div className="flex items-center gap-2 text-lg font-semibold">
+            <div 
+              key={tab.sheetId} 
+              onClick={() => router.push(`/sheets/${id}/tabs/${tab.sheetId}`)}
+              className="p-6 border border-border rounded-lg shadow-sm bg-card flex flex-col gap-3 cursor-pointer hover:border-indigo-500 transition-colors group"
+            >
+              <div className="flex items-center gap-2 text-lg font-semibold group-hover:text-indigo-500 transition-colors">
                 <Table2 size={20} className="text-indigo-500" />
                 {tab.title}
               </div>
