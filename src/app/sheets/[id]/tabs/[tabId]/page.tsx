@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Edit2, Trash2, List, Grid } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, List, Grid, Check, Link as LinkIcon } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -20,6 +20,7 @@ export default function TabRecords() {
   const [formData, setFormData] = useState<any>({});
   const [saving, setSaving] = useState(false);
   const [view, setView] = useState<'table' | 'grid'>('table');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (id && tabId) {
@@ -117,6 +118,13 @@ export default function TabRecords() {
     }
   };
 
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/f/${id}/${tabId}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const renderInput = (field: any) => {
     if (field.name === 'id') return null; // ID is managed automatically
     
@@ -188,16 +196,28 @@ export default function TabRecords() {
               <button
                 onClick={() => setView('table')}
                 className={`p-1 rounded ${view === 'table' ? 'bg-card shadow' : ''}`}
+                title="Table View"
               >
                 <List size={18} />
               </button>
               <button
                 onClick={() => setView('grid')}
                 className={`p-1 rounded ${view === 'grid' ? 'bg-card shadow' : ''}`}
+                title="Grid View"
               >
                 <Grid size={18} />
               </button>
             </div>
+            
+            <button
+              onClick={handleCopyLink}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md transition ${copied ? 'bg-green-500 text-white' : 'bg-background border border-border hover:bg-card'}`}
+              title="Copy Public Form Link"
+            >
+              {copied ? <Check size={18} /> : <LinkIcon size={18} />}
+              <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share Form'}</span>
+            </button>
+
             <button
               onClick={() => handleOpenModal()}
               disabled={loading || schema.length === 0}
