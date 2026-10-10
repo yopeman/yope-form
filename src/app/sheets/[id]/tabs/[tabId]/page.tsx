@@ -184,14 +184,14 @@ export default function TabRecords() {
   };
 
   return (
-    <div className="min-h-screen p-8 transition-colors bg-background text-foreground">
+    <div className="min-h-screen p-4 sm:p-8 transition-colors bg-background text-foreground">
       <header className="mb-8">
         <Link href={`/sheets/${id}`} className="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:underline mb-4">
           <ArrowLeft size={16} className="mr-1" /> Back to Tabs
         </Link>
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">{loading ? 'Loading...' : title} Data</h1>
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold break-all">{loading ? 'Loading...' : title} Data</h1>
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex bg-background border border-border rounded p-1">
               <button
                 onClick={() => setView('table')}

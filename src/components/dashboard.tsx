@@ -102,10 +102,10 @@ export function Dashboard({ user, clientEmail }: { user: any; clientEmail: strin
   };
 
   return (
-    <div className="min-h-screen p-8 transition-colors">
-      <header className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">Welcome, {user.username}</h1>
-        <div className="flex items-center gap-4">
+    <div className="min-h-screen p-4 sm:p-8 transition-colors">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <h1 className="text-2xl font-bold break-all">Welcome, {user.username}</h1>
+        <div className="flex flex-wrap items-center gap-3">
           <Link href="/profile" className="flex items-center gap-2 px-3 py-2 text-sm bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 transition">
             Profile
           </Link>
@@ -115,9 +115,9 @@ export function Dashboard({ user, clientEmail }: { user: any; clientEmail: strin
         </div>
       </header>
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h2 className="text-xl font-semibold">Your Connected Sheets</h2>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex bg-background border border-border rounded p-1">
             <button
               onClick={() => setView('grid')}
