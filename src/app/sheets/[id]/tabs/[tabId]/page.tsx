@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Edit2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, List, Grid } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -19,6 +19,7 @@ export default function TabRecords() {
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [formData, setFormData] = useState<any>({});
   const [saving, setSaving] = useState(false);
+  const [view, setView] = useState<'table' | 'grid'>('table');
 
   useEffect(() => {
     if (id && tabId) {
@@ -182,13 +183,29 @@ export default function TabRecords() {
         </Link>
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">{loading ? 'Loading...' : title} Data</h1>
-          <button
-            onClick={() => handleOpenModal()}
-            disabled={loading || schema.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
-          >
-            <Plus size={18} /> Add Record
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="flex bg-background border border-border rounded p-1">
+              <button
+                onClick={() => setView('table')}
+                className={`p-1 rounded ${view === 'table' ? 'bg-card shadow' : ''}`}
+              >
+                <List size={18} />
+              </button>
+              <button
+                onClick={() => setView('grid')}
+                className={`p-1 rounded ${view === 'grid' ? 'bg-card shadow' : ''}`}
+              >
+                <Grid size={18} />
+              </button>
+            </div>
+            <button
+              onClick={() => handleOpenModal()}
+              disabled={loading || schema.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
+            >
+              <Plus size={18} /> Add Record
+            </button>
+          </div>
         </div>
       </header>
 
@@ -198,7 +215,7 @@ export default function TabRecords() {
         <div className="text-center py-20 text-gray-500 border-2 border-dashed border-border rounded-lg">
           No records found. Click "Add Record" to start.
         </div>
-      ) : (
+      ) : view === 'table' ? (
         <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-card text-foreground border-b border-border">
@@ -239,6 +256,38 @@ export default function TabRecords() {
               ))}
             </tbody>
           </table>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {records.map((record, index) => (
+            <div key={record.id || index} className="p-6 border border-border rounded-lg shadow-sm bg-card flex flex-col gap-3 relative group">
+              <div className="absolute top-4 right-4 flex opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => handleOpenModal(record)}
+                  className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-2 p-1 bg-background rounded-md shadow-sm border border-border"
+                  title="Edit"
+                >
+                  <Edit2 size={14} />
+                </button>
+                <button
+                  onClick={() => handleDelete(record.id)}
+                  className="text-red-500 hover:text-red-700 p-1 bg-background rounded-md shadow-sm border border-border"
+                  title="Delete"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              
+              <div className="space-y-2 mt-2">
+                {schema.filter(f => f.name !== 'id').map(field => (
+                  <div key={field.name} className="flex justify-between border-b border-border/50 pb-1">
+                    <span className="text-xs text-gray-500 font-medium">{field.name}</span>
+                    <span className="text-sm font-semibold">{record[field.name]?.toString() || '-'}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import { ArrowLeft, Plus, Table2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Table2, Trash2, Edit2, List, Grid } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -27,8 +27,11 @@ export default function SheetDetails() {
   const [loading, setLoading] = useState(true);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [newTabName, setNewTabName] = useState('');
   const [addingTab, setAddingTab] = useState(false);
+  const [view, setView] = useState<'grid' | 'table'>('grid');
   
   const [fields, setFields] = useState<Field[]>([
     { id: '1', name: 'id', type: 'uuid', min: '', max: '', required: true, options: '', defaultValue: '' }
@@ -96,6 +99,47 @@ export default function SheetDetails() {
     }
   };
 
+  const handleEditTab = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddingTab(true);
+    try {
+      const res = await fetch(`/api/sheets/${id}/tabs/${editingTabId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTabName }),
+      });
+      if (res.ok) {
+        setIsEditModalOpen(false);
+        setNewTabName('');
+        setEditingTabId(null);
+        fetchTabs();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to edit tab');
+      }
+    } finally {
+      setAddingTab(false);
+    }
+  };
+
+  const handleDelete = async (tabIdToDel: string) => {
+    if (!confirm('Are you sure you want to delete this tab?')) return;
+    try {
+      const res = await fetch(`/api/sheets/${id}/tabs/${tabIdToDel}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        fetchTabs();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to delete tab');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error deleting tab');
+    }
+  };
+
   return (
     <div className="min-h-screen p-8 transition-colors bg-background text-foreground">
       <header className="mb-8">
@@ -104,13 +148,29 @@ export default function SheetDetails() {
         </Link>
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">{loading ? 'Loading...' : title}</h1>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
-          >
-            <Plus size={18} /> New Tab
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="flex bg-background border border-border rounded p-1">
+              <button
+                onClick={() => setView('table')}
+                className={`p-1 rounded ${view === 'table' ? 'bg-card shadow' : ''}`}
+              >
+                <List size={18} />
+              </button>
+              <button
+                onClick={() => setView('grid')}
+                className={`p-1 rounded ${view === 'grid' ? 'bg-card shadow' : ''}`}
+              >
+                <Grid size={18} />
+              </button>
+            </div>
+            <button
+              onClick={() => { setIsModalOpen(true); setNewTabName(''); }}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
+            >
+              <Plus size={18} /> New Tab
+            </button>
+          </div>
         </div>
       </header>
 
@@ -120,15 +180,72 @@ export default function SheetDetails() {
         <div className="text-center py-20 text-gray-500 border-2 border-dashed border-border rounded-lg">
           No tabs found in this spreadsheet.
         </div>
+      ) : view === 'table' ? (
+        <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-card text-foreground border-b border-border">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Title</th>
+                <th className="px-4 py-3 font-semibold">Rows</th>
+                <th className="px-4 py-3 font-semibold">Columns</th>
+                <th className="px-4 py-3 font-semibold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {tabs.map(tab => (
+                <tr key={tab.sheetId} className="hover:bg-background/50 transition-colors cursor-pointer group" onClick={() => router.push(`/sheets/${id}/tabs/${tab.sheetId}`)}>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300 font-medium group-hover:text-indigo-500 transition-colors flex items-center gap-2">
+                    <Table2 size={16} className="text-indigo-500" />
+                    {tab.title}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{tab.rowCount}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{tab.columnCount}</td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditingTabId(tab.sheetId); setNewTabName(tab.title); setIsEditModalOpen(true); }}
+                      className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
+                      title="Edit"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDelete(tab.sheetId); }}
+                      className="text-red-500 hover:text-red-700"
+                      title="Delete"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {tabs.map(tab => (
             <div 
               key={tab.sheetId} 
               onClick={() => router.push(`/sheets/${id}/tabs/${tab.sheetId}`)}
-              className="p-6 border border-border rounded-lg shadow-sm bg-card flex flex-col gap-3 cursor-pointer hover:border-indigo-500 transition-colors group"
+              className="p-6 border border-border rounded-lg shadow-sm bg-card flex flex-col gap-3 cursor-pointer hover:border-indigo-500 transition-colors group relative"
             >
-              <div className="flex items-center gap-2 text-lg font-semibold group-hover:text-indigo-500 transition-colors">
+              <div className="absolute top-4 right-4 flex opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setEditingTabId(tab.sheetId); setNewTabName(tab.title); setIsEditModalOpen(true); }}
+                  className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-2 p-1 bg-background rounded-md shadow-sm border border-border"
+                  title="Edit"
+                >
+                  <Edit2 size={14} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDelete(tab.sheetId); }}
+                  className="text-red-500 hover:text-red-700 p-1 bg-background rounded-md shadow-sm border border-border"
+                  title="Delete"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <div className="flex items-center gap-2 text-lg font-semibold group-hover:text-indigo-500 transition-colors mt-2">
                 <Table2 size={20} className="text-indigo-500" />
                 {tab.title}
               </div>
@@ -270,6 +387,42 @@ export default function SheetDetails() {
                   className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
                 >
                   {addingTab ? 'Creating...' : 'Create Tab'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-card border border-border rounded-xl max-w-sm w-full p-6 shadow-xl my-8">
+            <h2 className="text-xl font-bold mb-4">Edit Tab</h2>
+            <form onSubmit={handleEditTab} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Tab Name</label>
+                <input
+                  required
+                  type="text"
+                  value={newTabName}
+                  onChange={e => setNewTabName(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-md bg-background"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border mt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 rounded-md border border-border hover:opacity-80"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addingTab}
+                  className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {addingTab ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </form>
