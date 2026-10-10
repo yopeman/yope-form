@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { Plus, List, Grid, LogOut, Edit2, Trash2, Table2, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export function Dashboard({ user, clientEmail }: { user: any; clientEmail: string }) {
   const { theme, setTheme } = useTheme();
@@ -105,7 +106,10 @@ export function Dashboard({ user, clientEmail }: { user: any; clientEmail: strin
       <header className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Welcome, {user.username}</h1>
         <div className="flex items-center gap-4">
-          <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600">
+          <Link href="/profile" className="flex items-center gap-2 px-3 py-2 text-sm bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 transition">
+            Profile
+          </Link>
+          <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition">
             <LogOut size={16} /> Logout
           </button>
         </div>
