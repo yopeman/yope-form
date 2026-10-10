@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Plus, List, Grid, LogOut } from 'lucide-react';
+import { Plus, List, Grid, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export function Dashboard({ user }: { user: any }) {
@@ -63,12 +63,6 @@ export function Dashboard({ user }: { user: any }) {
       <header className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Welcome, {user.username}</h1>
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800"
-          >
-            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
           <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600">
             <LogOut size={16} /> Logout
           </button>
@@ -78,16 +72,16 @@ export function Dashboard({ user }: { user: any }) {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Your Connected Sheets</h2>
         <div className="flex items-center gap-4">
-          <div className="flex bg-gray-100 dark:bg-gray-800 rounded p-1">
+          <div className="flex bg-background border border-border rounded p-1">
             <button
               onClick={() => setView('grid')}
-              className={`p-1 rounded ${view === 'grid' ? 'bg-white dark:bg-gray-700 shadow' : ''}`}
+              className={`p-1 rounded ${view === 'grid' ? 'bg-card shadow' : ''}`}
             >
               <Grid size={18} />
             </button>
             <button
               onClick={() => setView('list')}
-              className={`p-1 rounded ${view === 'list' ? 'bg-white dark:bg-gray-700 shadow' : ''}`}
+              className={`p-1 rounded ${view === 'list' ? 'bg-card shadow' : ''}`}
             >
               <List size={18} />
             </button>
@@ -102,15 +96,15 @@ export function Dashboard({ user }: { user: any }) {
       </div>
 
       {sheets.length === 0 ? (
-        <div className="text-center py-20 text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
+        <div className="text-center py-20 text-gray-500 border-2 border-dashed border-border rounded-lg">
           No sheets connected yet. Click "Connect Sheet" to get started.
         </div>
       ) : (
         <div className={view === 'grid' ? 'grid grid-cols-1 md:grid-cols-3 gap-6' : 'flex flex-col gap-4'}>
           {sheets.map(sheet => (
-            <div key={sheet.uuid} className="p-6 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm bg-white dark:bg-gray-900 flex flex-col gap-2">
+            <div key={sheet.uuid} className="p-6 border border-border rounded-lg shadow-sm bg-card flex flex-col gap-2">
               <h3 className="font-semibold text-lg">{sheet.sheet_name}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 break-all">{sheet.sheet_id}</p>
+              <p className="text-sm text-gray-500 break-all">{sheet.sheet_id}</p>
             </div>
           ))}
         </div>
@@ -118,28 +112,28 @@ export function Dashboard({ user }: { user: any }) {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-900 rounded-xl max-w-md w-full p-6 shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Connect New Sheet</h2>
+          <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-xl">
+            <h2 className="text-xl font-bold mb-4 text-foreground">Connect New Sheet</h2>
             <form onSubmit={handleConnectSheet} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Sheet Name</label>
+                <label className="block text-sm font-medium mb-1 text-foreground">Sheet Name</label>
                 <input
                   required
                   type="text"
                   value={newSheetName}
                   onChange={e => setNewSheetName(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700"
+                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                   placeholder="e.g. My Users Data"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Spreadsheet ID</label>
+                <label className="block text-sm font-medium mb-1 text-foreground">Spreadsheet ID</label>
                 <input
                   required
                   type="text"
                   value={newSheetId}
                   onChange={e => setNewSheetId(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700"
+                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                   placeholder="1BxiMVs0XRY..."
                 />
               </div>
@@ -147,7 +141,7 @@ export function Dashboard({ user }: { user: any }) {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-md border hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="px-4 py-2 rounded-md border border-border hover:opacity-80"
                 >
                   Cancel
                 </button>
