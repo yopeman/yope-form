@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getExternalSpreadsheet } from '@/lib/google-sheets';
 import { getSession } from '@/lib/session';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     if (!session || !session.user) {
@@ -29,7 +29,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     if (!session || !session.user) {

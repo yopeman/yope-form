@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getExternalSpreadsheet } from '@/lib/google-sheets';
 
-export async function GET(request: Request, { params }: { params: { id: string; tabId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string; tabId: string }> }) {
   try {
     const { id, tabId } = await params;
     const doc = await getExternalSpreadsheet(id);
@@ -32,7 +32,7 @@ export async function GET(request: Request, { params }: { params: { id: string; 
   }
 }
 
-export async function POST(request: Request, { params }: { params: { id: string; tabId: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string; tabId: string }> }) {
   try {
     const { id, tabId } = await params;
     const body = await request.json();

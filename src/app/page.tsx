@@ -3,6 +3,8 @@ import { Dashboard } from '@/components/dashboard';
 import Link from 'next/link';
 import { FileSpreadsheet, Share2, Sparkles, Key, CheckCircle2 } from 'lucide-react';
 
+export const instant = false;
+
 export default async function Home() {
   const session = await getSession();
 
@@ -37,7 +39,7 @@ export default async function Home() {
             <Sparkles size={14} /> The easiest way to collect data
           </div>
           <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-foreground mb-6 leading-tight">
-            Turn any Google Sheet into a <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600">powerful public form</span>
+            Turn any Google Sheet into a <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-500 to-purple-600">powerful public form</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
             Stop wrestling with complex databases. Yope Form seamlessly transforms your spreadsheets into beautiful, shareable forms in seconds.

@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect, use, Suspense } from 'react';
 import { Check, Loader2 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -15,8 +14,8 @@ type SchemaField = {
   defaultValue: string;
 };
 
-export default function PublicForm() {
-  const params = useParams();
+function PublicFormContent({ params: paramsPromise }: { params: Promise<{ id: string; tabId: string }> }) {
+  const params = use(paramsPromise);
   const id = params.id as string;
   const tabId = params.tabId as string;
 
@@ -259,5 +258,19 @@ export default function PublicForm() {
         Powered by Yope Forms
       </div>
     </div>
+  );
+}
+
+export default function PublicForm({ params }: { params: Promise<{ id: string; tabId: string }> }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background text-foreground transition-colors p-4">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        </div>
+      }
+    >
+      <PublicFormContent params={params} />
+    </Suspense>
   );
 }

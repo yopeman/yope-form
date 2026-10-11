@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use, Suspense } from 'react';
 import { useTheme } from 'next-themes';
-import { ArrowLeft, Plus, Table2, Trash2, Edit2, List, Grid } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Plus, Table2, Trash2, Edit2, List, Grid, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 type Field = {
@@ -17,8 +17,8 @@ type Field = {
   defaultValue: string;
 };
 
-export default function SheetDetails() {
-  const params = useParams();
+function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = use(paramsPromise);
   const id = params.id as string;
   const router = useRouter();
   
@@ -406,5 +406,19 @@ export default function SheetDetails() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SheetDetails({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background text-foreground transition-colors p-4">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        </div>
+      }
+    >
+      <SheetDetailsContent params={params} />
+    </Suspense>
   );
 }

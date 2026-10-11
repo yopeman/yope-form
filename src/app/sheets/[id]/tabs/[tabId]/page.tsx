@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Edit2, Trash2, List, Grid, Check, Link as LinkIcon } from 'lucide-react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect, use, Suspense } from 'react';
+import { ArrowLeft, Plus, Edit2, Trash2, List, Grid, Check, Link as LinkIcon, Loader2 } from 'lucide-react';
+
 import Link from 'next/link';
 
-export default function TabRecords() {
-  const params = useParams();
+function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: string; tabId: string }> }) {
+  const params = use(paramsPromise);
   const id = params.id as string;
   const tabId = params.tabId as string;
   
@@ -355,5 +355,19 @@ export default function TabRecords() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TabRecords({ params }: { params: Promise<{ id: string; tabId: string }> }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background text-foreground transition-colors p-4">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        </div>
+      }
+    >
+      <TabRecordsContent params={params} />
+    </Suspense>
   );
 }
