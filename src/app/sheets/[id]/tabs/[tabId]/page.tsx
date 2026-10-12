@@ -316,8 +316,8 @@ function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: st
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-card border border-border rounded-xl max-w-lg w-full p-6 shadow-xl my-8">
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center p-4 pt-16 z-50 overflow-y-auto">
+          <div className="bg-card border border-border rounded-xl max-w-lg w-full p-6 shadow-xl mb-8 mt-4">
             <h2 className="text-xl font-bold mb-4">{editingRecordId ? 'Edit Record' : 'Add New Record'}</h2>
             <form onSubmit={handleSave} className="space-y-4">
               {schema.filter(f => f.name !== 'id').map(field => (
