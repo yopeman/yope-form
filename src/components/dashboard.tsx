@@ -26,6 +26,22 @@ export function Dashboard({ user, clientEmail }: { user: any; clientEmail: strin
   const [searchQuery, setSearchQuery] = useState(initialQuery);
 
   useEffect(() => {
+    try {
+      const savedView = localStorage.getItem('yope_dashboard_view');
+      if (savedView === 'grid' || savedView === 'list') {
+        setView(savedView);
+      }
+    } catch {}
+  }, []);
+
+  const handleViewChange = (newView: 'grid' | 'list') => {
+    setView(newView);
+    try {
+      localStorage.setItem('yope_dashboard_view', newView);
+    } catch {}
+  };
+
+  useEffect(() => {
     const currentQ = searchParams.get('q') || searchParams.get('search') || '';
     setSearchQuery(currentQ);
   }, [searchParams]);
@@ -177,14 +193,14 @@ export function Dashboard({ user, clientEmail }: { user: any; clientEmail: strin
           </div>
           <div className="flex bg-background border border-border rounded p-1 self-start sm:self-auto">
             <button
-              onClick={() => setView('grid')}
+              onClick={() => handleViewChange('grid')}
               className={`p-1 rounded ${view === 'grid' ? 'bg-card shadow' : ''}`}
               title="Grid View"
             >
               <Grid size={18} />
             </button>
             <button
-              onClick={() => setView('list')}
+              onClick={() => handleViewChange('list')}
               className={`p-1 rounded ${view === 'list' ? 'bg-card shadow' : ''}`}
               title="List View"
             >

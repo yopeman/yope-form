@@ -64,11 +64,10 @@ function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: st
     if (typeof window !== 'undefined' && id && tabId) {
       try {
         const saved = localStorage.getItem(`yope_hidden_cols_${id}_${tabId}`);
-        if (saved) {
-          setHiddenColumns(JSON.parse(saved));
-        }
+        setHiddenColumns(saved ? JSON.parse(saved) : []);
       } catch (e) {
         console.error('Failed to load hidden columns:', e);
+        setHiddenColumns([]);
       }
     }
   }, [id, tabId]);
@@ -118,6 +117,23 @@ function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: st
   const [saving, setSaving] = useState(false);
   const [view, setView] = useState<'table' | 'grid'>('table');
   const [copied, setCopied] = useState(false);
+
+  // Persist view preference in localStorage
+  useEffect(() => {
+    try {
+      const savedView = localStorage.getItem('yope_tab_records_view');
+      if (savedView === 'table' || savedView === 'grid') {
+        setView(savedView);
+      }
+    } catch {}
+  }, []);
+
+  const handleViewChange = (newView: 'table' | 'grid') => {
+    setView(newView);
+    try {
+      localStorage.setItem('yope_tab_records_view', newView);
+    } catch {}
+  };
 
   useEffect(() => {
     if (id && tabId) {
@@ -379,14 +395,14 @@ function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: st
 
               <div className="flex bg-background border border-border rounded p-1">
                 <button
-                  onClick={() => setView('table')}
+                  onClick={() => handleViewChange('table')}
                   className={`p-1 rounded ${view === 'table' ? 'bg-card shadow' : ''}`}
                   title="Table View"
                 >
                   <List size={18} />
                 </button>
                 <button
-                  onClick={() => setView('grid')}
+                  onClick={() => handleViewChange('grid')}
                   className={`p-1 rounded ${view === 'grid' ? 'bg-card shadow' : ''}`}
                   title="Grid View"
                 >

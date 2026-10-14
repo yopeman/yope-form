@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, use, Suspense } from 'react';
+import { useState, useEffect, use, Suspense, useRef } from 'react';
 import { useTheme } from 'next-themes';
-import { ArrowLeft, Plus, Table2, Trash2, Edit2, List, Grid, Loader2, Search, X } from 'lucide-react';
+import { ArrowLeft, Plus, Table2, Trash2, Edit2, List, Grid, Loader2, Search, X, Eye, EyeOff } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
@@ -66,6 +66,80 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
   const [newTabName, setNewTabName] = useState('');
   const [addingTab, setAddingTab] = useState(false);
   const [view, setView] = useState<'grid' | 'table'>('grid');
+
+  // Persist view preference
+  useEffect(() => {
+    try {
+      const savedView = localStorage.getItem('yope_sheet_tabs_view');
+      if (savedView === 'grid' || savedView === 'table') {
+        setView(savedView);
+      }
+    } catch {}
+  }, []);
+
+  const handleViewChange = (newView: 'grid' | 'table') => {
+    setView(newView);
+    try {
+      localStorage.setItem('yope_sheet_tabs_view', newView);
+    } catch {}
+  };
+
+  // Column toggling for tabs table
+  const tabColumns = [
+    { key: 'title', label: 'Title' },
+    { key: 'rowCount', label: 'Rows' },
+    { key: 'columnCount', label: 'Columns' },
+  ];
+  const [hiddenTabColumns, setHiddenTabColumns] = useState<string[]>([]);
+  const [isColumnsDropdownOpen, setIsColumnsDropdownOpen] = useState(false);
+  const columnsDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && id) {
+      try {
+        const saved = localStorage.getItem(`yope_hidden_tab_cols_${id}`);
+        setHiddenTabColumns(saved ? JSON.parse(saved) : []);
+      } catch {
+        setHiddenTabColumns([]);
+      }
+    }
+  }, [id]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (columnsDropdownRef.current && !columnsDropdownRef.current.contains(event.target as Node)) {
+        setIsColumnsDropdownOpen(false);
+      }
+    }
+    if (isColumnsDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isColumnsDropdownOpen]);
+
+  const toggleTabColumn = (colKey: string) => {
+    setHiddenTabColumns(prev => {
+      const next = prev.includes(colKey) ? prev.filter(c => c !== colKey) : [...prev, colKey];
+      if (typeof window !== 'undefined' && id) {
+        try {
+          localStorage.setItem(`yope_hidden_tab_cols_${id}`, JSON.stringify(next));
+        } catch {}
+      }
+      return next;
+    });
+  };
+
+  const showAllTabColumns = () => {
+    setHiddenTabColumns([]);
+    if (typeof window !== 'undefined' && id) {
+      try {
+        localStorage.removeItem(`yope_hidden_tab_cols_${id}`);
+      } catch {}
+    }
+  };
+
+  const isColVisible = (colKey: string) => !hiddenTabColumns.includes(colKey);
+  const visibleColCount = tabColumns.filter(c => isColVisible(c.key)).length;
 
   const [fields, setFields] = useState<Field[]>([
     { id: '1', name: 'id', type: 'uuid', min: '', max: '', required: true, options: '', defaultValue: '' }
@@ -211,21 +285,87 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
                 </button>
               )}
             </div>
-            <div className="flex bg-background border border-border rounded p-1 self-start sm:self-auto">
-              <button
-                onClick={() => setView('table')}
-                className={`p-1 rounded ${view === 'table' ? 'bg-card shadow' : ''}`}
-                title="Table View"
-              >
-                <List size={18} />
-              </button>
-              <button
-                onClick={() => setView('grid')}
-                className={`p-1 rounded ${view === 'grid' ? 'bg-card shadow' : ''}`}
-                title="Grid View"
-              >
-                <Grid size={18} />
-              </button>
+            <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
+              {/* Columns Visibility Dropdown */}
+              <div className="relative" ref={columnsDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsColumnsDropdownOpen(prev => !prev)}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border transition-all ${
+                    hiddenTabColumns.length > 0
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-950/40 dark:border-indigo-800 dark:text-indigo-300'
+                      : 'bg-background border-border text-foreground hover:bg-card'
+                  }`}
+                  title="Select visible columns"
+                >
+                  {hiddenTabColumns.length > 0 ? <EyeOff size={16} /> : <Eye size={16} />}
+                  <span className="hidden sm:inline">Columns</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-background/80 border border-border/80 font-medium ml-0.5">
+                    {visibleColCount}/{tabColumns.length}
+                  </span>
+                </button>
+
+                {isColumnsDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-xl shadow-xl z-50 p-3 animate-in fade-in zoom-in-95 duration-100">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-border">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                        <Eye size={14} className="text-indigo-600 dark:text-indigo-400" />
+                        <span>Visible Columns</span>
+                      </div>
+                      {hiddenTabColumns.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={showAllTabColumns}
+                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                        >
+                          Show all
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      {tabColumns.map(col => {
+                        const isVisible = isColVisible(col.key);
+                        return (
+                          <button
+                            key={col.key}
+                            type="button"
+                            onClick={() => toggleTabColumn(col.key)}
+                            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm text-foreground hover:bg-background/80 transition-colors group text-left"
+                          >
+                            <span className={`truncate mr-2 ${isVisible ? 'font-medium' : 'text-muted-foreground line-through opacity-70'}`}>
+                              {col.label}
+                            </span>
+                            <span className="shrink-0 text-muted-foreground group-hover:text-foreground">
+                              {isVisible ? (
+                                <Eye size={16} className="text-indigo-600 dark:text-indigo-400" />
+                              ) : (
+                                <EyeOff size={16} className="text-muted-foreground opacity-60" />
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex bg-background border border-border rounded p-1">
+                <button
+                  onClick={() => handleViewChange('table')}
+                  className={`p-1 rounded ${view === 'table' ? 'bg-card shadow' : ''}`}
+                  title="Table View"
+                >
+                  <List size={18} />
+                </button>
+                <button
+                  onClick={() => handleViewChange('grid')}
+                  className={`p-1 rounded ${view === 'grid' ? 'bg-card shadow' : ''}`}
+                  title="Grid View"
+                >
+                  <Grid size={18} />
+                </button>
+              </div>
             </div>
             <button
               onClick={() => {
@@ -264,39 +404,102 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-card text-foreground border-b border-border">
               <tr>
-                <th className="px-4 py-3 font-semibold">Title</th>
-                <th className="px-4 py-3 font-semibold">Rows</th>
-                <th className="px-4 py-3 font-semibold">Columns</th>
+                {isColVisible('title') && (
+                  <th className="px-4 py-3 font-semibold group/th">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>Title</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleTabColumn('title')}
+                        className="opacity-0 group-hover/th:opacity-100 text-muted-foreground hover:text-foreground p-1 rounded transition-opacity"
+                        title="Hide Title column"
+                      >
+                        <EyeOff size={14} />
+                      </button>
+                    </div>
+                  </th>
+                )}
+                {isColVisible('rowCount') && (
+                  <th className="px-4 py-3 font-semibold group/th">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>Rows</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleTabColumn('rowCount')}
+                        className="opacity-0 group-hover/th:opacity-100 text-muted-foreground hover:text-foreground p-1 rounded transition-opacity"
+                        title="Hide Rows column"
+                      >
+                        <EyeOff size={14} />
+                      </button>
+                    </div>
+                  </th>
+                )}
+                {isColVisible('columnCount') && (
+                  <th className="px-4 py-3 font-semibold group/th">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>Columns</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleTabColumn('columnCount')}
+                        className="opacity-0 group-hover/th:opacity-100 text-muted-foreground hover:text-foreground p-1 rounded transition-opacity"
+                        title="Hide Columns column"
+                      >
+                        <EyeOff size={14} />
+                      </button>
+                    </div>
+                  </th>
+                )}
                 <th className="px-4 py-3 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredTabs.map(tab => (
-                <tr key={tab.sheetId} className="hover:bg-background/50 transition-colors cursor-pointer group" onClick={() => router.push(`/sheets/${id}/tabs/${tab.sheetId}`)}>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300 font-medium group-hover:text-indigo-500 transition-colors flex items-center gap-2">
-                    <Table2 size={16} className="text-indigo-500" />
-                    {tab.title}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{tab.rowCount}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{tab.columnCount}</td>
-                  <td className="px-4 py-3 text-right">
+              {visibleColCount === 0 ? (
+                <tr>
+                  <td colSpan={2} className="px-4 py-8 text-center text-muted-foreground">
+                    All columns are currently hidden.{' '}
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleEditClick(tab.sheetId, tab.title); }}
-                      className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
-                      title="Edit"
+                      type="button"
+                      onClick={showAllTabColumns}
+                      className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium ml-1"
                     >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDelete(tab.sheetId); }}
-                      className="text-red-500 hover:text-red-700"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
+                      Show all columns
                     </button>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredTabs.map(tab => (
+                  <tr key={tab.sheetId} className="hover:bg-background/50 transition-colors cursor-pointer group" onClick={() => router.push(`/sheets/${id}/tabs/${tab.sheetId}`)}>
+                    {isColVisible('title') && (
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300 font-medium group-hover:text-indigo-500 transition-colors flex items-center gap-2">
+                        <Table2 size={16} className="text-indigo-500" />
+                        {tab.title}
+                      </td>
+                    )}
+                    {isColVisible('rowCount') && (
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{tab.rowCount}</td>
+                    )}
+                    {isColVisible('columnCount') && (
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{tab.columnCount}</td>
+                    )}
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEditClick(tab.sheetId, tab.title); }}
+                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
+                        title="Edit"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(tab.sheetId); }}
+                        className="text-red-500 hover:text-red-700"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
