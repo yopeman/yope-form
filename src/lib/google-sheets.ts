@@ -21,13 +21,6 @@ export const getSpreadsheet = async () => {
   return doc;
 };
 
-export const getExternalSpreadsheet = async (sheetId: string) => {
-  const jwt = getAuthToken();
-  const doc = new GoogleSpreadsheet(sheetId, jwt);
-  await doc.loadInfo();
-  return doc;
-};
-
 export const getUserSheet = async () => {
   const doc = await getSpreadsheet();
   let sheet = doc.sheetsByTitle['user'];
@@ -54,4 +47,25 @@ export const getUserSheetsTab = async () => {
   }
 
   return sheet;
+};
+
+export const getExternalSpreadsheet = async (sheetId: string) => {
+  let resolvedId = sheetId;
+  if (sheetId && sheetId.length === 36 && sheetId.includes('-')) {
+    try {
+      const sheet = await getUserSheetsTab();
+      const rows = await sheet.getRows();
+      const match = rows.find((r: any) => r.get('uuid') === sheetId);
+      if (match && match.get('sheet_id')) {
+        resolvedId = match.get('sheet_id');
+      }
+    } catch (e) {
+      console.warn('Could not resolve sheetId from uuid:', e);
+    }
+  }
+
+  const jwt = getAuthToken();
+  const doc = new GoogleSpreadsheet(resolvedId, jwt);
+  await doc.loadInfo();
+  return doc;
 };

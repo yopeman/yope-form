@@ -21,17 +21,17 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
   const params = use(paramsPromise);
   const id = params.id as string;
   const router = useRouter();
-  
+
   const [tabs, setTabs] = useState<any[]>([]);
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(true);
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [newTabName, setNewTabName] = useState('');
   const [addingTab, setAddingTab] = useState(false);
   const [view, setView] = useState<'grid' | 'table'>('grid');
-  
+
   const [fields, setFields] = useState<Field[]>([
     { id: '1', name: 'id', type: 'uuid', min: '', max: '', required: true, options: '', defaultValue: '' }
   ]);
@@ -61,7 +61,7 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
 
   const handleAddField = () => {
     setFields([
-      ...fields, 
+      ...fields,
       { id: Date.now().toString(), name: '', type: 'string', min: '', max: '', required: false, options: '', defaultValue: '' }
     ]);
   };
@@ -104,7 +104,7 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
   const handleEditClick = async (tabId: string, tabTitle: string) => {
     setEditingTabId(tabId);
     setNewTabName(tabTitle);
-    
+
     try {
       const res = await fetch(`/api/sheets/${id}/tabs/${tabId}/records`);
       if (res.ok) {
@@ -125,7 +125,7 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
     } catch (e) {
       console.error(e);
     }
-    
+
     setIsModalOpen(true);
   };
 
@@ -171,11 +171,11 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
               </button>
             </div>
             <button
-              onClick={() => { 
+              onClick={() => {
                 setEditingTabId(null);
-                setNewTabName(''); 
+                setNewTabName('');
                 setFields([{ id: '1', name: 'id', type: 'uuid', min: '', max: '', required: true, options: '', defaultValue: '' }]);
-                setIsModalOpen(true); 
+                setIsModalOpen(true);
               }}
               disabled={loading}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
@@ -236,8 +236,8 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {tabs.map(tab => (
-            <div 
-              key={tab.sheetId} 
+            <div
+              key={tab.sheetId}
               onClick={() => router.push(`/sheets/${id}/tabs/${tab.sheetId}`)}
               className="p-6 border border-border rounded-lg shadow-sm bg-card flex flex-col gap-3 cursor-pointer hover:border-indigo-500 transition-colors group relative"
             >
@@ -294,14 +294,14 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
                     <Plus size={14} /> Add Field
                   </button>
                 </div>
-                
+
                 <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                   {fields.filter(f => f.id !== '1').map((field, index) => (
                     <div key={field.id} className="p-4 border border-border rounded-lg bg-background/50 grid grid-cols-2 md:grid-cols-4 gap-4 relative">
                       <button type="button" onClick={() => handleRemoveField(field.id)} className="absolute top-2 right-2 text-red-500 hover:text-red-700">
                         <Trash2 size={16} />
                       </button>
-                      
+
                       <div className="col-span-2 md:col-span-1">
                         <label className="block text-xs text-gray-500 mb-1">Name</label>
                         <input
@@ -312,7 +312,7 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
                           className="w-full px-2 py-1 text-sm border border-border rounded bg-background"
                         />
                       </div>
-                      
+
                       <div className="col-span-2 md:col-span-1">
                         <label className="block text-xs text-gray-500 mb-1">Type</label>
                         <select
