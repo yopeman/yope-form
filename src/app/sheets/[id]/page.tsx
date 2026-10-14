@@ -2,8 +2,8 @@
 
 import { useState, useEffect, use, Suspense } from 'react';
 import { useTheme } from 'next-themes';
-import { ArrowLeft, Plus, Table2, Trash2, Edit2, List, Grid, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { ArrowLeft, Plus, Table2, Trash2, Edit2, List, Grid, Loader2, Search, X } from 'lucide-react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 type Field = {
@@ -21,10 +21,45 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
   const params = use(paramsPromise);
   const id = params.id as string;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   const [tabs, setTabs] = useState<any[]>([]);
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const initialQuery = searchParams.get('q') || searchParams.get('search') || '';
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+
+  useEffect(() => {
+    const currentQ = searchParams.get('q') || searchParams.get('search') || '';
+    setSearchQuery(currentQ);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentParam = searchParams.get('q') || searchParams.get('search') || '';
+      if (searchQuery !== currentParam) {
+        const params = new URLSearchParams(searchParams.toString());
+        if (searchQuery.trim()) {
+          params.set('q', searchQuery.trim());
+        } else {
+          params.delete('q');
+          params.delete('search');
+        }
+        const qs = params.toString();
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, pathname, router, searchParams]);
+
+  const filteredTabs = tabs.filter(tab => {
+    const term = searchQuery.toLowerCase().trim();
+    if (!term) return true;
+    return (tab.title || '').toLowerCase().includes(term);
+  });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
@@ -153,19 +188,41 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
         <Link href="/" className="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:underline mb-4">
           <ArrowLeft size={16} className="mr-1" /> Back to Dashboard
         </Link>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <h1 className="text-2xl font-bold break-all">{loading ? 'Loading...' : title}</h1>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex bg-background border border-border rounded p-1">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search tabs..."
+                className="w-full pl-9 pr-8 py-2 text-sm rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded transition"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="flex bg-background border border-border rounded p-1 self-start sm:self-auto">
               <button
                 onClick={() => setView('table')}
                 className={`p-1 rounded ${view === 'table' ? 'bg-card shadow' : ''}`}
+                title="Table View"
               >
                 <List size={18} />
               </button>
               <button
                 onClick={() => setView('grid')}
                 className={`p-1 rounded ${view === 'grid' ? 'bg-card shadow' : ''}`}
+                title="Grid View"
               >
                 <Grid size={18} />
               </button>
@@ -178,7 +235,7 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
                 setIsModalOpen(true);
               }}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
             >
               <Plus size={18} /> New Tab
             </button>
@@ -192,6 +249,16 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
         <div className="text-center py-20 text-gray-500 border-2 border-dashed border-border rounded-lg">
           No tabs found in this spreadsheet.
         </div>
+      ) : filteredTabs.length === 0 ? (
+        <div className="text-center py-20 text-gray-500 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2">
+          <p>No tabs found matching &ldquo;{searchQuery}&rdquo;</p>
+          <button
+            onClick={() => setSearchQuery('')}
+            className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+          >
+            Clear search filter
+          </button>
+        </div>
       ) : view === 'table' ? (
         <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
           <table className="w-full text-left text-sm whitespace-nowrap">
@@ -204,7 +271,7 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {tabs.map(tab => (
+              {filteredTabs.map(tab => (
                 <tr key={tab.sheetId} className="hover:bg-background/50 transition-colors cursor-pointer group" onClick={() => router.push(`/sheets/${id}/tabs/${tab.sheetId}`)}>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-300 font-medium group-hover:text-indigo-500 transition-colors flex items-center gap-2">
                     <Table2 size={16} className="text-indigo-500" />
@@ -235,7 +302,7 @@ function SheetDetailsContent({ params: paramsPromise }: { params: Promise<{ id: 
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {tabs.map(tab => (
+          {filteredTabs.map(tab => (
             <div
               key={tab.sheetId}
               onClick={() => router.push(`/sheets/${id}/tabs/${tab.sheetId}`)}

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, use, Suspense } from 'react';
-import { ArrowLeft, Plus, Edit2, Trash2, List, Grid, Check, Link as LinkIcon, Loader2 } from 'lucide-react';
-
+import { ArrowLeft, Plus, Edit2, Trash2, List, Grid, Check, Link as LinkIcon, Loader2, Search, X } from 'lucide-react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: string; tabId: string }> }) {
@@ -14,6 +14,46 @@ function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: st
   const [records, setRecords] = useState<any[]>([]);
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const initialQuery = searchParams.get('q') || searchParams.get('search') || '';
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+
+  useEffect(() => {
+    const currentQ = searchParams.get('q') || searchParams.get('search') || '';
+    setSearchQuery(currentQ);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentParam = searchParams.get('q') || searchParams.get('search') || '';
+      if (searchQuery !== currentParam) {
+        const params = new URLSearchParams(searchParams.toString());
+        if (searchQuery.trim()) {
+          params.set('q', searchQuery.trim());
+        } else {
+          params.delete('q');
+          params.delete('search');
+        }
+        const qs = params.toString();
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, pathname, router, searchParams]);
+
+  const filteredRecords = records.filter(record => {
+    const term = searchQuery.toLowerCase().trim();
+    if (!term) return true;
+    return Object.entries(record).some(([key, val]) => {
+      if (val === null || val === undefined) return false;
+      return String(val).toLowerCase().includes(term);
+    });
+  });
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
@@ -189,46 +229,69 @@ function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: st
         <Link href={`/sheets/${id}`} className="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:underline mb-4">
           <ArrowLeft size={16} className="mr-1" /> Back to Tabs
         </Link>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <h1 className="text-2xl font-bold break-all">{loading ? 'Loading...' : title} Data</h1>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex bg-background border border-border rounded p-1">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search records..."
+                className="w-full pl-9 pr-8 py-2 text-sm rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded transition"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 self-start sm:self-auto">
+              <div className="flex bg-background border border-border rounded p-1">
+                <button
+                  onClick={() => setView('table')}
+                  className={`p-1 rounded ${view === 'table' ? 'bg-card shadow' : ''}`}
+                  title="Table View"
+                >
+                  <List size={18} />
+                </button>
+                <button
+                  onClick={() => setView('grid')}
+                  className={`p-1 rounded ${view === 'grid' ? 'bg-card shadow' : ''}`}
+                  title="Grid View"
+                >
+                  <Grid size={18} />
+                </button>
+              </div>
+              
               <button
-                onClick={() => setView('table')}
-                className={`p-1 rounded ${view === 'table' ? 'bg-card shadow' : ''}`}
-                title="Table View"
+                onClick={handleCopyLink}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-300 border ${
+                  copied 
+                    ? 'bg-green-500 border-green-500 text-white font-medium' 
+                    : 'bg-background border-border text-foreground hover:bg-card'
+                }`}
+                title="Copy Public Form Link"
               >
-                <List size={18} />
+                {copied ? <Check size={18} className="text-white" /> : <LinkIcon size={18} />}
+                <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share Form'}</span>
               </button>
+
               <button
-                onClick={() => setView('grid')}
-                className={`p-1 rounded ${view === 'grid' ? 'bg-card shadow' : ''}`}
-                title="Grid View"
+                onClick={() => handleOpenModal()}
+                disabled={loading || schema.length === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
               >
-                <Grid size={18} />
+                <Plus size={18} /> <span className="whitespace-nowrap">Add Record</span>
               </button>
             </div>
-            
-            <button
-              onClick={handleCopyLink}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-300 border ${
-                copied 
-                  ? 'bg-green-500 border-green-500 text-white font-medium' 
-                  : 'bg-background border-border text-foreground hover:bg-card'
-              }`}
-              title="Copy Public Form Link"
-            >
-              {copied ? <Check size={18} className="text-white" /> : <LinkIcon size={18} />}
-              <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share Form'}</span>
-            </button>
-
-            <button
-              onClick={() => handleOpenModal()}
-              disabled={loading || schema.length === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
-            >
-              <Plus size={18} /> Add Record
-            </button>
           </div>
         </div>
       </header>
@@ -237,7 +300,17 @@ function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: st
         <div className="text-center py-20 text-gray-500">Loading records...</div>
       ) : records.length === 0 ? (
         <div className="text-center py-20 text-gray-500 border-2 border-dashed border-border rounded-lg">
-          No records found. Click "Add Record" to start.
+          No records found. Click &ldquo;Add Record&rdquo; to start.
+        </div>
+      ) : filteredRecords.length === 0 ? (
+        <div className="text-center py-20 text-gray-500 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2">
+          <p>No records found matching &ldquo;{searchQuery}&rdquo;</p>
+          <button
+            onClick={() => setSearchQuery('')}
+            className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+          >
+            Clear search filter
+          </button>
         </div>
       ) : view === 'table' ? (
         <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
@@ -253,7 +326,7 @@ function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: st
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {records.map((record, index) => (
+              {filteredRecords.map((record, index) => (
                 <tr key={record.id || index} className="hover:bg-background/50 transition-colors">
                   {schema.filter(f => f.name !== 'id').map(field => (
                     <td key={field.name} className="px-4 py-3 text-gray-600 dark:text-gray-300">
@@ -283,7 +356,7 @@ function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: st
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {records.map((record, index) => (
+          {filteredRecords.map((record, index) => (
             <div key={record.id || index} className="p-6 border border-border rounded-lg shadow-sm bg-card flex flex-col gap-3 relative group">
               <div className="absolute top-4 right-4 flex opacity-0 group-hover:opacity-100 transition-opacity">
                 <button

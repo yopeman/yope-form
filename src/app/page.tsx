@@ -1,7 +1,8 @@
+import { Suspense } from 'react';
 import { getSession } from '@/lib/session';
 import { Dashboard } from '@/components/dashboard';
 import Link from 'next/link';
-import { FileSpreadsheet, Share2, Sparkles, Key, CheckCircle2 } from 'lucide-react';
+import { FileSpreadsheet, Share2, Sparkles, Key, CheckCircle2, Loader2 } from 'lucide-react';
 
 export const instant = false;
 
@@ -9,7 +10,17 @@ export default async function Home() {
   const session = await getSession();
 
   if (session?.user) {
-    return <Dashboard user={session.user} clientEmail={process.env.CLIENT_EMAIL || ''} />;
+    return (
+      <Suspense
+        fallback={
+          <div className="min-h-screen flex items-center justify-center bg-background text-foreground transition-colors p-4">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+          </div>
+        }
+      >
+        <Dashboard user={session.user} clientEmail={process.env.CLIENT_EMAIL || ''} />
+      </Suspense>
+    );
   }
 
   return (
