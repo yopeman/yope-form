@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, use, Suspense } from 'react';
-import { ArrowLeft, Plus, Edit2, Trash2, List, Grid, Check, Link as LinkIcon, Loader2, Search, X } from 'lucide-react';
+import { useState, useEffect, use, Suspense, useRef } from 'react';
+import { ArrowLeft, Plus, Edit2, Trash2, List, Grid, Check, Link as LinkIcon, Loader2, Search, X, Eye, EyeOff } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
@@ -54,6 +54,63 @@ function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: st
       return String(val).toLowerCase().includes(term);
     });
   });
+
+  const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
+  const [isColumnsDropdownOpen, setIsColumnsDropdownOpen] = useState(false);
+  const columnsDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load hidden columns preference
+  useEffect(() => {
+    if (typeof window !== 'undefined' && id && tabId) {
+      try {
+        const saved = localStorage.getItem(`yope_hidden_cols_${id}_${tabId}`);
+        if (saved) {
+          setHiddenColumns(JSON.parse(saved));
+        }
+      } catch (e) {
+        console.error('Failed to load hidden columns:', e);
+      }
+    }
+  }, [id, tabId]);
+
+  // Handle clicking outside columns dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (columnsDropdownRef.current && !columnsDropdownRef.current.contains(event.target as Node)) {
+        setIsColumnsDropdownOpen(false);
+      }
+    }
+    if (isColumnsDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isColumnsDropdownOpen]);
+
+  const toggleColumn = (columnName: string) => {
+    setHiddenColumns(prev => {
+      const next = prev.includes(columnName)
+        ? prev.filter(c => c !== columnName)
+        : [...prev, columnName];
+      if (typeof window !== 'undefined' && id && tabId) {
+        try {
+          localStorage.setItem(`yope_hidden_cols_${id}_${tabId}`, JSON.stringify(next));
+        } catch {}
+      }
+      return next;
+    });
+  };
+
+  const showAllColumns = () => {
+    setHiddenColumns([]);
+    if (typeof window !== 'undefined' && id && tabId) {
+      try {
+        localStorage.removeItem(`yope_hidden_cols_${id}_${tabId}`);
+      } catch {}
+    }
+  };
+
+  const allFields = schema.filter(f => f.name !== 'id');
+  const visibleSchema = allFields.filter(f => !hiddenColumns.includes(f.name));
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
@@ -253,7 +310,73 @@ function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: st
               )}
             </div>
 
-            <div className="flex items-center gap-3 self-start sm:self-auto">
+            <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
+              {/* Columns Visibility Dropdown */}
+              <div className="relative" ref={columnsDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsColumnsDropdownOpen(prev => !prev)}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border transition-all ${
+                    hiddenColumns.length > 0
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-950/40 dark:border-indigo-800 dark:text-indigo-300'
+                      : 'bg-background border-border text-foreground hover:bg-card'
+                  }`}
+                  title="Select visible columns"
+                >
+                  {hiddenColumns.length > 0 ? <EyeOff size={16} /> : <Eye size={16} />}
+                  <span className="hidden sm:inline">Columns</span>
+                  {allFields.length > 0 && (
+                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-background/80 border border-border/80 font-medium ml-0.5">
+                      {visibleSchema.length}/{allFields.length}
+                    </span>
+                  )}
+                </button>
+
+                {isColumnsDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-xl shadow-xl z-50 p-3 animate-in fade-in zoom-in-95 duration-100">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-border">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                        <Eye size={14} className="text-indigo-600 dark:text-indigo-400" />
+                        <span>Visible Columns</span>
+                      </div>
+                      {hiddenColumns.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={showAllColumns}
+                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                        >
+                          Show all
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-1 pr-1">
+                      {allFields.map(field => {
+                        const isVisible = !hiddenColumns.includes(field.name);
+                        return (
+                          <button
+                            key={field.name}
+                            type="button"
+                            onClick={() => toggleColumn(field.name)}
+                            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm text-foreground hover:bg-background/80 transition-colors group text-left"
+                          >
+                            <span className={`truncate mr-2 ${isVisible ? 'font-medium' : 'text-muted-foreground line-through opacity-70'}`}>
+                              {field.name}
+                            </span>
+                            <span className="shrink-0 text-muted-foreground group-hover:text-foreground">
+                              {isVisible ? (
+                                <Eye size={16} className="text-indigo-600 dark:text-indigo-400" />
+                              ) : (
+                                <EyeOff size={16} className="text-muted-foreground opacity-60" />
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex bg-background border border-border rounded p-1">
                 <button
                   onClick={() => setView('table')}
@@ -317,40 +440,65 @@ function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: st
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-card text-foreground border-b border-border">
               <tr>
-                {schema.filter(f => f.name !== 'id').map(field => (
-                  <th key={field.name} className="px-4 py-3 font-semibold">
-                    {field.name}
+                {visibleSchema.map(field => (
+                  <th key={field.name} className="px-4 py-3 font-semibold group/th">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{field.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleColumn(field.name)}
+                        className="opacity-0 group-hover/th:opacity-100 text-muted-foreground hover:text-foreground p-1 rounded transition-opacity"
+                        title={`Hide ${field.name} column`}
+                      >
+                        <EyeOff size={14} />
+                      </button>
+                    </div>
                   </th>
                 ))}
                 <th className="px-4 py-3 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredRecords.map((record, index) => (
-                <tr key={record.id || index} className="hover:bg-background/50 transition-colors">
-                  {schema.filter(f => f.name !== 'id').map(field => (
-                    <td key={field.name} className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                      {record[field.name]?.toString() || '-'}
-                    </td>
-                  ))}
-                  <td className="px-4 py-3 text-right">
+              {visibleSchema.length === 0 ? (
+                <tr>
+                  <td colSpan={2} className="px-4 py-8 text-center text-muted-foreground">
+                    All columns are currently hidden.{' '}
                     <button
-                      onClick={() => handleOpenModal(record)}
-                      className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
-                      title="Edit"
+                      type="button"
+                      onClick={showAllColumns}
+                      className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium ml-1"
                     >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(record.id)}
-                      className="text-red-500 hover:text-red-700"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
+                      Show all columns
                     </button>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredRecords.map((record, index) => (
+                  <tr key={record.id || index} className="hover:bg-background/50 transition-colors">
+                    {visibleSchema.map(field => (
+                      <td key={field.name} className="px-4 py-3 text-gray-600 dark:text-gray-300">
+                        {record[field.name]?.toString() || '-'}
+                      </td>
+                    ))}
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => handleOpenModal(record)}
+                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
+                        title="Edit"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(record.id)}
+                        className="text-red-500 hover:text-red-700"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -376,12 +524,25 @@ function TabRecordsContent({ params: paramsPromise }: { params: Promise<{ id: st
               </div>
               
               <div className="space-y-2 mt-2">
-                {schema.filter(f => f.name !== 'id').map(field => (
-                  <div key={field.name} className="flex justify-between border-b border-border/50 pb-1">
-                    <span className="text-xs text-gray-500 font-medium">{field.name}</span>
-                    <span className="text-sm font-semibold">{record[field.name]?.toString() || '-'}</span>
+                {visibleSchema.length === 0 ? (
+                  <div className="text-center py-4 text-xs text-muted-foreground">
+                    All columns hidden.{' '}
+                    <button
+                      type="button"
+                      onClick={showAllColumns}
+                      className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                    >
+                      Show all
+                    </button>
                   </div>
-                ))}
+                ) : (
+                  visibleSchema.map(field => (
+                    <div key={field.name} className="flex justify-between border-b border-border/50 pb-1">
+                      <span className="text-xs text-gray-500 font-medium">{field.name}</span>
+                      <span className="text-sm font-semibold">{record[field.name]?.toString() || '-'}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           ))}
